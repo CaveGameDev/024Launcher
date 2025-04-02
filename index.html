@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CheerpJ Classic 0.24</title>
+    <script src="https://cjrtnc.leaningtech.com/3.1/cj3loader.js"></script>
+</head>
+<body>
+    <script>
+        (async function () {
+            await cheerpjInit();
+            cheerpjCreateDisplay(800, 600);
+
+            const jarUrls = [
+                "./lwjgl.jar",
+                "./lwjgl_util.jar",
+                "./jinput.jar",
+                "./jopt-simple-4.5.jar",
+                "./asm-all-4.1.jar",
+                "./launchwrapper-1.6.jar",
+                "./024.jar"
+            ];
+
+            async function fetchAndLoad(url, filename) {
+                try {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    await cheerpjAddFile(filename, new Uint8Array(arrayBuffer));
+                } catch (error) {
+                    console.error("Error loading JAR:", url, error);
+                }
+            }
+
+            // Load jar files from the local directory.
+            await Promise.all(jarUrls.map(async (url) => {
+                await fetchAndLoad(url, url.substring(url.lastIndexOf('/') + 1));
+            }));
+
+            // Load natives from the natives directory.
+            async function loadNatives() {
+                const nativeDlls = [
+                    "./natives/jinput-dx8.dll",
+                    "./natives/jinput-dx8_64.dll",
+                    "./natives/jinput-raw.dll",
+                    "./natives/jinput-raw_64.dll",
+                    "./natives/lwjgl.dll",
+                    "./natives/lwjgl64.dll",
+                    "./natives/OpenAL32.dll",
+                    "./natives/OpenAL64.dll"
+                ];
+
+                for (const dllPath of nativeDlls) {
+                    try {
+                        await fetchAndLoad(dllPath, dllPath.substring(dllPath.lastIndexOf('/') + 1));
+                    } catch (error) {
+                        console.error("Error loading native DLL:", dllPath, error);
+                    }
+                }
+            }
+
+            await loadNatives();
+
+            await cheerpjRunMain(
+                "net.minecraft.launchwrapper.Launch",
+                "launchwrapper-1.6.jar;024.jar;lwjgl.jar;lwjgl_util.jar;jinput.jar;jopt-simple4.5.jar;asm-all-4.1.jar",
+                [
+                    "--tweakClass", "net.minecraft.launchwrapper.AlphaVanillaTweaker",
+                    "--username", "Player",
+                    "--session", "0"
+                ],
+                {
+                    "sun.java2d.noddraw": "true",
+                    "sun.awt.noerasebackground": "true",
+                    "sun.java2d.d3d": "false",
+                    "sun.java2d.opengl": "false",
+                    "Xmx": "512M",
+                    "Xms": "256M"
+                }
+            );
+        })();
+    </script>
+</body>
+</html>
